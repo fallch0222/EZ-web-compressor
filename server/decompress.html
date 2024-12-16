@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Decompress and Render HTML</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.4/pako.min.js"></script>
+</head>
+<body>
+  <!-- 빈 페이지 -->
+
+  <script>
+    // 페이지 로드 후 바로 압축된 파일을 처리하도록 설정
+    window.addEventListener('load', function() {
+      fetchCompressedFileAndDecompress();
+    });
+
+    async function fetchCompressedFileAndDecompress() {
+      try {
+        // 1. 압축된 파일을 로드 (static 폴더에서 compressed.txt)
+        const response = await fetch('/compressed.txt');
+        const base64Compressed = await response.text();
+
+        // 2. Base64 디코딩
+        const compressed = Uint8Array.from(atob(base64Compressed), c => c.charCodeAt(0));
+
+        // 3. pako로 디컴프레션
+        const decompressed = pako.inflate(compressed, { to: 'string' });
+
+        // 4. JSON 파싱 (디컴프레션된 데이터는 JSON 형식이어야 합니다)
+        const { html, css, js } = JSON.parse(decompressed);
+
+        // 5. 디컴프레션된 HTML, CSS, JS를 동적으로 렌더링
+        renderHTML(html, css, js);
+      } catch (error) {
+        console.error('Error during decompression:', error);
+      }
+    }
+
+    // HTML, CSS, JS를 동적으로 렌더링하는 함수
+    function renderHTML(htmlContent, cssContent, jsContent) {
+      // 1. CSS와 JS를 동적으로 삽입하고 HTML을 body에 추가
+      document.head.innerHTML += `<style>${cssContent}</style>`; // CSS 삽입
+      document.body.innerHTML = htmlContent; // HTML 삽입
+
+      // 2. JS 코드 동적으로 삽입
+      const script = document.createElement('script');
+      script.textContent = jsContent;
+      document.body.appendChild(script);
+    }
+  </script>
+</body>
+</html>
